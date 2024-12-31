@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon index.js"
+   
+    "dev": "concurrently \"nodemon btvn1\" \"json-server --watch db.json --port 3000 \""
   },
   "keywords": [
     "f8",

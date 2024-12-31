@@ -7,7 +7,7 @@ const uri = "http://localhost:3000";
 // Middleware để parse JSON
 app.use(express.json());
 
-// Get All Products
+// Lấy tất cả products
 app.get("/products", (req, res) => {
   fetch(`${uri}/products`)
     .then((res) => res.json())
@@ -20,7 +20,7 @@ app.get("/products", (req, res) => {
     });
 });
 
-// Get Product by ID
+// Lấy product theo ID
 app.get("/products/:id", (req, res) => {
   const { id } = req.params;
   fetch(`${uri}/products/${id}`)
@@ -37,7 +37,7 @@ app.get("/products/:id", (req, res) => {
     });
 });
 
-// Create a New Product
+// Tạo 1 Product
 app.post("/products", (req, res) => {
   const newProduct = req.body;
   fetch(`${uri}/products`, {
@@ -56,7 +56,7 @@ app.post("/products", (req, res) => {
     });
 });
 
-// Update a Product
+// Update Product
 app.put("/products/:id", (req, res) => {
   const { id } = req.params;
   const updatedProduct = req.body;
@@ -80,7 +80,7 @@ app.put("/products/:id", (req, res) => {
     });
 });
 
-// Delete a Product
+// Xóa 1 Product
 app.delete("/products/:id", (req, res) => {
   const { id } = req.params;
   fetch(`${uri}/products/${id}`, {
@@ -98,7 +98,7 @@ app.delete("/products/:id", (req, res) => {
     });
 });
 
-// Handle invalid routes
+// Nếu routes lỗi
 app.use((req, res) => {
   res.status(404).json({ message: "Router not found" });
 });
