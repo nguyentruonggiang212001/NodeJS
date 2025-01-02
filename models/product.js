@@ -18,4 +18,4 @@ const productsSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 
-export default mongoose.model("Products");
+export default mongoose.model("Product", productsSchema);
