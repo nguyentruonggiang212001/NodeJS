@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+const Schema = mongoose;
+
 const productsSchema = new mongoose.Schema(
   {
     title: {
@@ -14,8 +16,23 @@ const productsSchema = new mongoose.Schema(
       type: String,
       default: "Updating",
     },
+    categoryId: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+    },
+    isHidden: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true, versionKey: false }
 );
 
-export default mongoose.model("Product", productsSchema);
+const Product = mongoose.model("Product", productsSchema);
+
+export default Product;

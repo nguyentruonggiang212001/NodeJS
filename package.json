@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon btvn2"
+    "dev": "nodemon --experimental-specifier-resolution=node index.js"
   },
   "keywords": [
     "f8",
@@ -15,9 +15,11 @@
   "license": "MIT",
   "dependencies": {
     "concurrently": "^9.1.1",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "json-server": "^0.17.0",
-    "mongoose": "^8.9.2",
-    "nodemon": "^3.1.9"
+    "mongoose": "^8.9.4",
+    "nodemon": "^3.1.9",
+    "zod": "^3.24.1"
   }
 }
