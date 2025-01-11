@@ -19,6 +19,7 @@ export const createCategory = async (req, res) => {
     });
   }
 };
+
 export const getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find();
@@ -38,6 +39,7 @@ export const getAllCategories = async (req, res) => {
     });
   }
 };
+
 export const getCategoryById = async (req, res, next) => {
   try {
     const category = await Category.findById(req.params.id);

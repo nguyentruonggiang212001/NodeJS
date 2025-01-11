@@ -1,21 +1,12 @@
 import { Router } from "express";
+import { validBodyRequest } from "./../middlewares/validBodyRequest.js";
+import { loginSchema, registerSchema } from "../validations/authSchema.js";
+import { login, register } from "./../controllers/authControllers.js";
 
 const authRoutes = Router();
 
-const authMiddleware = (req, res, next) => {
-  console.log(req.body);
-  console.log("middleware");
-  //logic kiem tra xong
-  next();
-};
+authRoutes.post("/register", validBodyRequest(registerSchema), register);
 
-authRoutes.post("/register", authMiddleware, async (req, res) => {
-  console.log(req.body);
-  console.log("Dang ky thanh cong");
-});
-
-authRoutes.post("/login", authMiddleware, async (req, res) => {
-  console.log("dang nhap thanh cong");
-});
+authRoutes.post("/login", validBodyRequest(loginSchema), login);
 
 export default authRoutes;
