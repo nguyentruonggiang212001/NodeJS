@@ -6,6 +6,7 @@ import {
   updatedById,
   removeById,
   softDeleteProduct,
+  restoreProduct,
 } from "../controllers/productController.js";
 
 import { validBodyRequest } from "./../middlewares/validBodyRequest.js";
@@ -16,8 +17,9 @@ const productRoutes = Router();
 productRoutes.get("/", getAll);
 productRoutes.get("/:id", getById);
 productRoutes.post("/", validBodyRequest(productsSchema), create);
-productRoutes.patch("/:id", updatedById);
-productRoutes.patch("/:id/soft-delete", softDeleteProduct);
+productRoutes.patch("/:id", validBodyRequest(productsSchema), updatedById);
+productRoutes.patch("/soft-delete/:id", softDeleteProduct);
 productRoutes.delete("/:id", removeById);
+productRoutes.patch("/restore/:id", restoreProduct);
 
 export default productRoutes;

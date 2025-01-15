@@ -1,126 +1,184 @@
-import Category from "./../models/Category.js";
+import { handleError500 } from "../helpers/index.js";
+import Categories from "./../models/Category.js";
 
-export const createCategory = async (req, res) => {
+import mongoose from "mongoose";
+
+export const getAllCategories = async (req, res, next) => {
   try {
-    const category = await Category.create(req.body);
-
-    if (!category) {
+    const data = await Categories.find({ isHidden: false }).populate(
+      "products"
+    );
+    if (!data.length) {
       return res.status(404).json({
-        message: "Not found!",
+        message: "không tìm thấy category",
       });
     }
     return res.status(200).json({
-      message: "Create successfully!",
-      category,
-    });
-  } catch (err) {
-    res.status(400).json({
-      message: "Error",
-    });
-  }
-};
-
-export const getAllCategories = async (req, res) => {
-  try {
-    const categories = await Category.find();
-    if (!categories || categories.length === 0) {
-      return res.status(404).json({
-        message: "Not found!",
-      });
-    }
-    return res.status(200).json({
-      message: "Get successfully!",
-      categories,
+      message: "lấy danh category thành công",
+      data,
     });
   } catch (error) {
-    return res.status(400).json({
-      message: "Error!",
-      error: error.message || "Error!",
-    });
+    return handleError500(res, error);
   }
 };
 
 export const getCategoryById = async (req, res, next) => {
   try {
-    const category = await Category.findById(req.params.id);
-    if (!category) {
-      return res.status(404).json({
-        message: "Not found!",
+    const { id } = req.params;
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Không tìm thấy category",
       });
     }
-    return res.status(200).json({
-      message: "Get successfully!",
-      category,
-    });
-  } catch (error) {
-    next();
-  }
-};
-export const softDeleteCategory = async (req, res) => {
-  try {
-    const softDeletedCategory = await Category.findByIdAndUpdate(
-      req.params.id,
-      {
-        deletedAt: new Date(),
-        isHidden: true,
-      }
-    );
-    if (!softDeletedCategory) {
-      return res.status(404).json({
-        message: "Category not found!",
-      });
-    }
-    return res.status(200).json({
-      message: "Soft delete successfully!",
-      softDeletedCategory,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      message: "Error!",
-      error:
-        error.message || "Error occurred while soft deleting the category!",
-    });
-  }
-};
 
-export const removeById = async (req, res) => {
-  try {
-    const data = await Category.findByIdAndDelete(req.params.id);
+    const data = await Categories.findOne({
+      _id: id,
+      isHidden: false,
+    }).populate("products");
+
     if (!data) {
       return res.status(404).json({
-        message: "Not found!",
+        message: "không tìm thấy dữ liệu",
       });
     }
     return res.status(200).json({
-      message: "Delete successfully!",
+      message: "lấy category thành công",
       data,
     });
   } catch (error) {
-    return res.status(400).json({
-      message: "Error!",
-      error: error.message || "Error!",
-    });
+    return handleError500(res, error);
   }
 };
-export const updatedById = async (req, res) => {
+
+export const createCategory = async (req, res, next) => {
   try {
-    const datas = await Category.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      timestamps: true,
-    });
-    if (!datas) {
-      return res.status(404).json({
-        message: "Not found!",
+    const data = await Categories.create(req.body);
+
+    if (!data) {
+      return res.status(400).json({
+        message: "lỗi khi khởi tạo category",
       });
     }
-    return res.status(200).json({
-      message: "Update successfully!",
-      datas,
+    return res.status(201).json({
+      message: "tạo category thành công",
+      data,
     });
   } catch (error) {
-    return res.status(400).json({
-      message: "Error!",
-      error: error.message || "Error!",
+    return handleError500(res, error);
+  }
+};
+
+export const updateCategoryById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const dataBody = req.body;
+
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+    const data = await Categories.updateOne({ _id: id }, { $set: dataBody });
+    return res.status(200).json({
+      message: "cập nhật thành công",
+      data,
     });
+  } catch (error) {
+    return handleError500(res, error);
+  }
+};
+export const removeCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+    // Kiểm tra xem danh mục người dùng định xoá có phải danh mục mặc định không?
+    if (id === "678249b3c6af5a6413213aab") {
+      return res.status(400).json({
+        message: "Không thể xóa danh mục mặc định",
+      });
+    }
+
+    const data = await Categories.findByIdAndDelete(id);
+    if (!data) {
+      return res.status(404).json({
+        message: "Category không tồn tại",
+      });
+    }
+    // Xoá id danh mục khỏi tất cả sản phẩm thuộc danh mục đó và đưa các sản phẩm đó vào danh mục mặc định "67836a60a83094583683c85e"
+
+    // Case 1: Update sản phẩm của danh mục bị xoá vào danh mục mặc định
+
+    await Product.updateMany(
+      { categoryId: id }, // categoryId bị xoá
+      { categoryId: "678249b3c6af5a6413213aab" }
+    );
+
+    await Category.updateOne(
+      { _id: "67678249b3c6af5a6413213aab" },
+      { $push: { products: { $each: category.products } } }
+    );
+
+    return res.status(200).json({
+      message: "xóa thành công category",
+    });
+  } catch (error) {
+    return handleError500(res, error);
+  }
+};
+
+export const softDeleteCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+
+    const data = await Categories.findByIdAndUpdate(
+      id,
+      { isHidden: true, deleteAt: new Date() },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      message: "xóa mềm thành công",
+      data,
+    });
+  } catch (error) {
+    return handleError500(res, error);
+  }
+};
+export const restoreCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+    const data = await Categories.findByIdAndUpdate(
+      id,
+      { isHidden: false, deleteAt: null },
+      { new: true }
+    );
+    if (!data) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+
+    return res.status(200).json({
+      message: "khôi phục thành công",
+      data,
+    });
+  } catch (error) {
+    return handleError500(res, error);
   }
 };

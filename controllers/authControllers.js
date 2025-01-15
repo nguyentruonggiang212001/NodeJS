@@ -1,6 +1,7 @@
 import User from "./../models/User.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
 /**
  * Bước 1: Kiểm tra email đã đăng ký chưa
@@ -12,11 +13,15 @@ import jwt from "jsonwebtoken";
  * - Nếu muốn xác thực email, thì gửi email (nodemailer) cho người dùng để kích hoạt.
  **/
 
+dotenv.config({});
+
+const { SECRET_KEY } = process.env;
+
 export const register = async (req, res) => {
   const { email, password, role } = req.body;
 
   try {
-    const existEmail = await User.findOne({ email: email });
+    const existEmail = await User.findOne({ email });
 
     // Nếu email đã tồn tại, không cho tạo tài khoản
     if (existEmail) {
@@ -29,6 +34,7 @@ export const register = async (req, res) => {
     const hashPassword = bcryptjs.hashSync(password, 10);
 
     // Lưu thông tin register vào database
+
     const user = await User.create({
       ...req.body,
       password: hashPassword,
@@ -38,11 +44,7 @@ export const register = async (req, res) => {
     // Thông báo thành công
     res.status(201).json({
       message: "Tạo tài khoản thành công",
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
+      user,
     });
   } catch (error) {
     console.error("Lỗi khi đăng ký:", error); // Log lỗi
@@ -62,45 +64,37 @@ export const login = async (req, res) => {
    */
   const { email, password } = req.body;
 
-  try {
-    // Bước 1: Kiểm tra email đã đăng ký chưa
-    const user = await User.findOne({ email: email });
-    if (!user) {
-      return res.status(400).json({
-        message: "Email này chưa được đăng ký. Vui lòng đăng ký tài khoản.",
-      });
-    }
-
-    console.log("Mật khẩu người dùng:", password);
-
-    // Bước 2: So sánh mật khẩu
-    const comparePassword = bcryptjs.compareSync(password, user.password);
-    console.log(comparePassword);
-    if (!comparePassword) {
-      return res.status(400).json({ message: "Mật khẩu không chính xác." });
-    }
-
-    // Bước 3 và 4 : Tạo JWT token và duy trì trạng thái đăng nhập
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" } // Thời gian hết hạn token là 1 ngày
-    );
-
-    // Bước 5: Thông báo thành công và trả về token
-    res.status(200).json({
-      message: "Đăng nhập thành công.",
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
+  // Bước 1: Kiểm tra email đã đăng ký chưa?
+  const userExist = await User.findOne({ email });
+  if (!userExist) {
+    res.status(404).json({
+      message: "Tai khoan chua dang ky!",
     });
-  } catch (error) {
-    console.error("Lỗi khi đăng nhập:", error); // Log lỗi
-    res
-      .status(500)
-      .json({ message: "Có lỗi xảy ra, vui lòng thử lại.", error });
   }
+
+  // Bước 2: Từ email đã find được user, compare password xem có khớp không
+  const compareResult = bcryptjs.compareSync(password, userExist.password);
+
+  if (!compareResult) {
+    return res.status(400).json({
+      message: "Mat khau khong dung!",
+    });
+  }
+
+  // Bước 3: Sign JWT (cài đặt jwt)
+
+  const accessToken = jwt.sign(
+    {
+      _id: userExist._id,
+    },
+    SECRET_KEY,
+    { expiresIn: "10d" }
+  );
+
+  userExist.password = undefined;
+  return res.status(200).json({
+    message: "Dang nhap thanh cong",
+    accessToken,
+    user: userExist,
+  });
 };

@@ -1,63 +1,21 @@
 import Product from "../models/Product.js";
 import Category from "./../models/Category.js";
-
-export const create = async (req, res) => {
-  try {
-    // Nếu không có categoryId hoặc categoryId là chuỗi rỗng
-    let categoryId = req.body.categoryId;
-    if (!categoryId || categoryId.trim() === "") {
-      // Kiểm tra danh mục "Uncategorized" đã tồn tại chưa
-      let uncategorizedCategory = await Category.findOne({
-        title: "Uncategorized",
-      });
-      if (!uncategorizedCategory) {
-        // Tạo danh mục mới nếu chưa tồn tại
-        uncategorizedCategory = await Category.create({
-          title: "Uncategorized",
-          products: [],
-        });
-      }
-      categoryId = uncategorizedCategory._id;
-    }
-
-    // Tìm danh mục bằng categoryId
-    const findCategoryById = await Category.findById(categoryId);
-    if (!findCategoryById) {
-      return res.status(404).json({
-        message: "Không tìm thấy danh mục với categoryId này.",
-      });
-    }
-
-    // Tạo sản phẩm mới
-    const newProduct = await Product.create({ ...req.body, categoryId });
-    // Thêm sản phẩm vào danh mục
-    findCategoryById.products.push(newProduct._id);
-
-    await findCategoryById.save();
-
-    return res.status(201).send({
-      message: "Tạo sản phẩm thành công!",
-      product: newProduct,
-    });
-  } catch (error) {
-    return res.status(400).send({
-      message: "Lỗi khi tạo sản phẩm!",
-      error: error.message || "Đã xảy ra lỗi.",
-    });
-  }
-};
+import mongoose from "mongoose";
 
 export const getAll = async (req, res) => {
   try {
-    const datas = await Product.find().populate("categoryId");
-    if (!datas || datas.length === 0) {
+    const dataList = await Product.find({
+      isHidden: false,
+      deletedAt: null,
+    }).populate("categoryId");
+    if (!dataList || dataList.length === 0) {
       return res.status(404).send({
         message: "Not found!",
       });
     }
     return res.status(200).send({
       message: "Get successfully!",
-      datas,
+      dataList,
     });
   } catch (error) {
     return res.status(400).send({
@@ -66,36 +24,85 @@ export const getAll = async (req, res) => {
     });
   }
 };
+
 export const getById = async (req, res, next) => {
   try {
-    const datas = await Product.findById(req.params.id);
-    if (!datas) {
-      return res.status(404).send({
+    const { id } = req.params;
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+    const data = await Product.findById(id).populate("categoryId", "title");
+    if (!data) {
+      return res.status(404).json({
         message: "Not found!",
       });
     }
-    return res.status(200).send({
+
+    if (!data.title || !data.price) {
+      return res.status(400).json({
+        message: "Product is missing required fields (title, price)",
+      });
+    }
+    return res.status(200).json({
       message: "Get successfully!",
-      datas,
+      data,
     });
   } catch (error) {
     next();
   }
 };
+
+export const create = async (req, res) => {
+  let { title, price, categoryId, description } = req.body;
+
+  if (!categoryId || !mongoose.Types.ObjectId.isValid(categoryId)) {
+    // Bước 1: Nếu Id danh mục lỗi hoặc không có, sử dụng id danh mục mặc định "67836a60a83094583683c85e"
+    categoryId = "678249b3c6af5a6413213aab";
+  } else {
+    // Bước 2: Nếu Id danh mục hợp lệ, kiểm tra xem danh mục có thực sự còn tồn tại không
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return next(new Error("Category not found"));
+    }
+  }
+  // Bước 3: Tạo sản phẩm và lưu vào database
+  const product = await Product.create({
+    title,
+    price,
+    categoryId,
+    description,
+  });
+  // Bước 4: Thêm id sản phẩm vào danh mục trong database
+  await Category.updateOne(
+    { _id: categoryId },
+    { $push: { products: product._id } }
+  );
+  // Bước 5: Trả về sản phẩm vừa tạo và thông báo thành công
+  return res.status(201).json(product);
+};
+
 export const softDeleteProduct = async (req, res) => {
   try {
-    const softDeletedProduct = await Product.findByIdAndUpdate(req.params.id, {
+    const { id } = req.params;
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+    const product = await Product.findByIdAndUpdate(id, {
       deletedAt: new Date(),
       isHidden: true,
     });
-    if (!softDeletedProduct) {
+    if (!product) {
       return res.status(404).json({
         message: "Product not found!",
       });
     }
     return res.status(200).json({
       message: "Soft delete successfully!",
-      softDeletedProduct,
+      product,
     });
   } catch (error) {
     return res.status(400).json({
@@ -105,45 +112,95 @@ export const softDeleteProduct = async (req, res) => {
   }
 };
 
-export const removeById = async (req, res) => {
+export const updatedById = async (req, res) => {
   try {
-    const datas = await Product.findByIdAndDelete(req.params.id);
-    if (!datas) {
-      return res.status(404).send({
+    const { id } = req.params;
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+    const data = await Product.findByIdAndUpdate(id, req.body, {
+      new: true,
+      timestamps: true,
+    });
+    if (!data) {
+      return res.status(404).json({
         message: "Not found!",
       });
     }
-    return res.status(200).send({
-      message: "Delete successfully!",
-      datas,
+    return res.status(200).json({
+      message: "Update successfully!",
+      data,
     });
   } catch (error) {
-    return res.status(400).send({
+    return res.status(400).json({
       message: "Error!",
       error: error.message || "Error!",
     });
   }
 };
 
-export const updatedById = async (req, res) => {
+export const removeById = async (req, res) => {
   try {
-    const datas = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      timestamps: true,
-    });
-    if (!datas) {
-      return res.status(404).send({
+    const { id } = req.params;
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: "không tìm thấy category",
+      });
+    }
+    const data = await Product.findByIdAndDelete(id);
+    if (!data) {
+      return res.status(404).json({
         message: "Not found!",
       });
     }
-    return res.status(200).send({
-      message: "Update successfully!",
-      datas,
+    // Xoá id sản phẩm khỏi danh mục
+    await Category.updateOne(
+      { _id: data.categoryId },
+      { $pull: { products: id } }
+    );
+
+    return res.status(200).json({
+      message: "Delete successfully!",
+      data,
     });
   } catch (error) {
-    return res.status(400).send({
+    return res.status(400).json({
       message: "Error!",
       error: error.message || "Error!",
+    });
+  }
+};
+
+export const restoreProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Kiểm tra ID hợp lệ
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid product ID" });
+    }
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { deletedAt: null, isHidden: false },
+      { new: true }
+    );
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    // Thêm id sản phẩm vào danh mục
+    await Category.updateOne(
+      { _id: product.categoryId },
+      { $push: { products: id } }
+    );
+    return res.status(200).json({
+      message: "Product restored successfully!",
+      product,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error occurred while restoring the product",
+      error: error.message,
     });
   }
 };

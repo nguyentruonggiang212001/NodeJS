@@ -9,8 +9,4 @@ routes.use("/products", productRoutes);
 routes.use("/auth", authRoutes);
 routes.use("/categories", categoryRouter);
 
-// GET ALL: /products/
-// GET BY ID: /products/:id
-// CREATE: /products
-
 export default routes;

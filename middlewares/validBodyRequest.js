@@ -1,8 +1,7 @@
 export const validBodyRequest = (schemaValid) => (req, res, next) => {
   //logic valid xong
   try {
-    console.log(schemaValid);
-    const data = schemaValid.parse(req.body);
+    schemaValid.parse(req.body);
     next();
   } catch (err) {
     const errors = err.errors.map((item) => `${item.path}:${item.message}`);

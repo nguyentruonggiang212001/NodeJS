@@ -4,9 +4,10 @@ import {
   createCategory,
   getAllCategories,
   getCategoryById,
-  removeById,
+  removeCategory,
+  restoreCategory,
   softDeleteCategory,
-  updatedById,
+  updateCategoryById,
 } from "../controllers/categoryController.js";
 import { validBodyRequest } from "../middlewares/validBodyRequest.js";
 
@@ -15,8 +16,13 @@ const categoryRouter = Router();
 categoryRouter.get("/", getAllCategories);
 categoryRouter.get("/:id", getCategoryById);
 categoryRouter.post("/", validBodyRequest(categorySchema), createCategory);
-categoryRouter.patch("/:id", validBodyRequest(categorySchema), updatedById);
-categoryRouter.patch("/:id/soft-delete", softDeleteCategory);
-categoryRouter.delete("/:id", removeById);
+categoryRouter.patch(
+  "/:id",
+  validBodyRequest(categorySchema),
+  updateCategoryById
+);
+categoryRouter.patch("/soft-delete/:id", softDeleteCategory);
+categoryRouter.delete("/:id", removeCategory);
+categoryRouter.patch("/restore/:id", restoreCategory);
 
 export default categoryRouter;

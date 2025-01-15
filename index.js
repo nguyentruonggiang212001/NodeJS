@@ -2,9 +2,9 @@ import express from "express";
 import routes from "./routes/index.js";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
-import categoryRouter from "./routes/categoryRoutes.js";
 
 dotenv.config();
+
 const { PORT } = process.env;
 
 const app = express();
@@ -21,5 +21,5 @@ app.use((req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port: ${PORT}`);
+  console.log(`Server is running on port: ${PORT}/api`);
 });

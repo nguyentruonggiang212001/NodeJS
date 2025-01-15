@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       require: true,
+      unique: true,
     },
     username: {
       type: String,
@@ -17,12 +18,13 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      default: "number",
+      default: "member",
       enum: ["member", "admin", "superAdmin"],
+      require: true,
     },
   },
   {
-    version: false,
+    versionKey: false,
     timestamp: true,
   }
 );

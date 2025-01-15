@@ -1,8 +1,7 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
+import slugMiddleware from "../middlewares/slugMiddleware.js";
 
-const Schema = mongoose;
-
-const productsSchema = new mongoose.Schema(
+const productsSchema = new Schema(
   {
     title: {
       type: String,
@@ -29,10 +28,15 @@ const productsSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    slug: {
+      type: String,
+      unique: true,
+    },
   },
   { timestamps: true, versionKey: false }
 );
 
+productsSchema.plugin(slugMiddleware("title", "slug"));
 const Product = mongoose.model("Product", productsSchema);
 
 export default Product;
