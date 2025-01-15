@@ -1,13 +1,12 @@
 import { handleError500 } from "../helpers/index.js";
-import Categories from "./../models/Category.js";
+
+import Category from "./../models/Category.js";
 
 import mongoose from "mongoose";
 
 export const getAllCategories = async (req, res, next) => {
   try {
-    const data = await Categories.find({ isHidden: false }).populate(
-      "products"
-    );
+    const data = await Category.find({ isHidden: false }).populate("products");
     if (!data.length) {
       return res.status(404).json({
         message: "không tìm thấy category",
@@ -30,8 +29,7 @@ export const getCategoryById = async (req, res, next) => {
         message: "Không tìm thấy category",
       });
     }
-
-    const data = await Categories.findOne({
+    const data = await Category.findOne({
       _id: id,
       isHidden: false,
     }).populate("products");
@@ -52,7 +50,7 @@ export const getCategoryById = async (req, res, next) => {
 
 export const createCategory = async (req, res, next) => {
   try {
-    const data = await Categories.create(req.body);
+    const data = await Category.create(req.body);
 
     if (!data) {
       return res.status(400).json({
@@ -79,7 +77,9 @@ export const updateCategoryById = async (req, res, next) => {
         message: "không tìm thấy category",
       });
     }
-    const data = await Categories.updateOne({ _id: id }, { $set: dataBody });
+    const data = await Category.findByIdAndUpdate(id, dataBody, {
+      new: true,
+    });
     return res.status(200).json({
       message: "cập nhật thành công",
       data,
@@ -91,7 +91,6 @@ export const updateCategoryById = async (req, res, next) => {
 export const removeCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-
     if (id && !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(404).json({
         message: "không tìm thấy category",
@@ -104,28 +103,26 @@ export const removeCategory = async (req, res, next) => {
       });
     }
 
-    const data = await Categories.findByIdAndDelete(id);
+    const data = await Category.findByIdAndDelete(id);
     if (!data) {
       return res.status(404).json({
         message: "Category không tồn tại",
       });
     }
-    // Xoá id danh mục khỏi tất cả sản phẩm thuộc danh mục đó và đưa các sản phẩm đó vào danh mục mặc định "67836a60a83094583683c85e"
-
-    // Case 1: Update sản phẩm của danh mục bị xoá vào danh mục mặc định
 
     await Product.updateMany(
-      { categoryId: id }, // categoryId bị xoá
+      { categoryId: id },
       { categoryId: "678249b3c6af5a6413213aab" }
     );
 
     await Category.updateOne(
       { _id: "67678249b3c6af5a6413213aab" },
-      { $push: { products: { $each: category.products } } }
+      { $push: { products: { $each: data.products } } }
     );
 
     return res.status(200).json({
       message: "xóa thành công category",
+      data,
     });
   } catch (error) {
     return handleError500(res, error);
@@ -141,7 +138,7 @@ export const softDeleteCategory = async (req, res, next) => {
       });
     }
 
-    const data = await Categories.findByIdAndUpdate(
+    const data = await Category.findByIdAndUpdate(
       id,
       { isHidden: true, deleteAt: new Date() },
       { new: true }
@@ -163,7 +160,7 @@ export const restoreCategory = async (req, res, next) => {
         message: "không tìm thấy category",
       });
     }
-    const data = await Categories.findByIdAndUpdate(
+    const data = await Category.findByIdAndUpdate(
       id,
       { isHidden: false, deleteAt: null },
       { new: true }

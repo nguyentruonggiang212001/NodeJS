@@ -37,6 +37,7 @@ const productsSchema = new Schema(
 );
 
 productsSchema.plugin(slugMiddleware("title", "slug"));
+
 const Product = mongoose.model("Product", productsSchema);
 
 export default Product;
