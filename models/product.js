@@ -32,9 +32,28 @@ const productsSchema = new Schema(
       type: String,
       unique: true,
     },
+    rate: {
+      type: Number,
+    },
+    soldCount: {
+      type: Number,
+      default: 0,
+    },
+    variants: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ProductVariant",
+      },
+    ],
   },
   { timestamps: true, versionKey: false }
 );
+
+productsSchema.virtual("variantsData", {
+  ref: "ProductVariant",
+  localField: "variants",
+  foreignField: "_id",
+});
 
 productsSchema.plugin(slugMiddleware("title", "slug"));
 

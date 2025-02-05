@@ -1,21 +1,23 @@
 import Product from "../models/Product.js";
 import Category from "./../models/Category.js";
 import mongoose from "mongoose";
+import {
+  createProduct,
+  getAllProduct,
+  updateById,
+} from "./../services/productServices.js";
 
 export const getAll = async (req, res) => {
   try {
-    const dataList = await Product.find({
-      isHidden: false,
-      deletedAt: null,
-    }).populate("categoryId");
-    if (!dataList || dataList.length === 0) {
+    const data = await getAllProduct();
+    if (!data.length) {
       return res.status(404).json({
-        message: "Not found!",
+        message: "No products found!",
       });
     }
     return res.status(200).json({
-      message: "Get successfully!",
-      dataList,
+      message: "ok",
+      data,
     });
   } catch (error) {
     return res.status(400).json({
@@ -56,7 +58,7 @@ export const create = async (req, res) => {
 
   if (!categoryId || !mongoose.Types.ObjectId.isValid(categoryId)) {
     // Bước 1: Nếu Id danh mục lỗi hoặc không có, sử dụng id danh mục mặc định "67836a60a83094583683c85e"
-    categoryId = "678249b3c6af5a6413213aab";
+    categoryId = "6790ba28b992f20ef9e0ba80";
   } else {
     // Bước 2: Nếu Id danh mục hợp lệ, kiểm tra xem danh mục có thực sự còn tồn tại không
     const category = await Category.findById(categoryId);
@@ -65,12 +67,15 @@ export const create = async (req, res) => {
     }
   }
   // Bước 3: Tạo sản phẩm và lưu vào database
-  const product = await Product.create({
-    title,
-    price,
-    categoryId,
-    description,
-  });
+  // const product = await Product.create({
+  //   title,
+  //   price,
+  //   categoryId,
+  //   description,
+  // });
+
+  const product = await createProduct(req.body);
+
   // Bước 4: Thêm id sản phẩm vào danh mục trong database
   await Category.updateOne(
     { _id: categoryId },
@@ -89,9 +94,12 @@ export const updatedById = async (req, res) => {
         message: "không tìm thấy category",
       });
     }
-    const data = await Product.findByIdAndUpdate(id, dataBody, {
-      new: true,
-    });
+    // const data = await Product.findByIdAndUpdate(id, dataBody, {
+    //   new: true,
+    // });
+
+    const data = await updateById(id, dataBody);
+
     if (!data) {
       return res.status(404).json({
         message: "Not found!",

@@ -97,7 +97,7 @@ export const removeCategory = async (req, res, next) => {
       });
     }
     // Kiểm tra xem danh mục người dùng định xoá có phải danh mục mặc định không?
-    if (id === "678249b3c6af5a6413213aab") {
+    if (id === "6790ba28b992f20ef9e0ba80") {
       return res.status(400).json({
         message: "Không thể xóa danh mục mặc định",
       });
@@ -112,11 +112,11 @@ export const removeCategory = async (req, res, next) => {
 
     await Product.updateMany(
       { categoryId: id },
-      { categoryId: "678249b3c6af5a6413213aab" }
+      { categoryId: "6790ba28b992f20ef9e0ba80" }
     );
 
     await Category.updateOne(
-      { _id: "67678249b3c6af5a6413213aab" },
+      { _id: "6790ba28b992f20ef9e0ba80" },
       { $push: { products: { $each: data.products } } }
     );
 
